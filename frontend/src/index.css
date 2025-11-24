@@ -1,0 +1,189 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+/* Reset & global styles */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f4f9;
+  color: #333;
+}
+
+/* Navbar */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #585d00;
+  color: white;
+  padding: 20px 25px;
+
+}
+
+nav h2 {
+  margin: 0;
+  
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  margin-left: 15px;
+  font-weight: bold;
+}
+
+nav a:hover {
+  text-decoration:wavy;
+  color:#333;
+  /* text-decoration-color: #333; */
+}
+
+/* Forms */
+form {
+  /* height:100vh; */
+  display: flex;
+  align-items: center;
+  text-align: center;
+  flex-direction: column;
+  /* max-width: 400px;
+  margin-top: 20px; */
+  /* border-radius: 12px; */
+  /* background-color: aqua; */
+  
+}
+
+.forml{
+  
+  height:100vh;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  flex-direction: column;
+  /* max-width: 400px;
+  margin-top: 20px; */
+  /* border-radius: 12px; */
+  background-color: aqua;
+  
+
+}
+
+form input {
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+form button {
+  padding: 10px;
+  background-color: #4f46e5;
+  color: white;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+form button:active{
+  transform: scale(0.98);
+}
+
+form button:hover {
+  background-color: #3730a3;
+}
+
+/* Dashboard habit list */
+ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  margin-bottom: 10px;
+  padding: 10px 15px;
+  border-radius: 5px;
+  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+li span {
+  cursor: pointer;
+}
+
+li span.completed {
+  text-decoration: line-through;
+  color: gray;
+}
+
+li button {
+  background-color: transpa
+
+}
+
+.logout-btn-modern {
+  /* Font & Text */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+
+  /* Spacing & Sizing */
+  padding: 12px 24px;
+
+  /* Borders & Background */
+  background-color: #e53e3e; /* A nice, modern red */
+  border: none;
+  border-radius: 8px; /* Rounded corners */
+
+  /* Effects */
+  cursor: pointer; /* Show hand cursor on hover */
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.logout-btn-modern:hover {
+  background-color: #5e86dd; /* Darker red on hover */
+  transform: translateY(-2px); /* Slight lift */
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.logout-btn-modern:active {
+  background-color: #894242; /* Even darker red on click */
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.logout-btn-modern:focus-visible {
+  /* Accessibility outline */
+  outline: 2px solid #e05e5e;
+  outline-offset: 2px;
+}
+.logo {
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #020923; /* Main theme color */
+  text-decoration: none; /* Remove underline if it’s a link */
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
