@@ -1,37 +1,44 @@
-import React, { useEffect, useState } from "react";
-import api from "../api";
-import HabitForm from "../components/HabitForm";
-import HabitCard from "../components/HabitCard";
+import React, { useEffect, useState, useCallback } from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-const user = JSON.parse(localStorage.getItem("user"));
+import api from "../api";
+import HabitCard from "../components/HabitCard";
+import HabitForm from "../components/HabitForm";
+import StatsBar from "../components/StatsBar";
+import Timer from "../components/Timer";
+
+function getUser() {
+  try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
+}
 
 export default function Dashboard() {
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [activeTimer, setActiveTimer] = useState(null); // habit being timed
+  const user = getUser();
 
-  const fetchHabits = async () => {
+  const fetchHabits = useCallback(async () => {
     try {
       const res = await api.get("/habits");
       setHabits(res.data);
     } catch (err) {
-      console.error("Fetch habits error:", err.response?.data || err.message);
+      console.error("Fetch habits:", err.response?.data || err.message);
       if (err.response?.status === 401) window.location.href = "/login";
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchHabits();
-  }, []);
+  }, [fetchHabits]);
 
-  const addHabit = async (title) => {
+  const addHabit = async (title, category, timerMinutes) => {
     try {
-      const res = await api.post("/habits", { title });
-      setHabits((prev) => [...prev, res.data]);
+      const res = await api.post("/habits", { title, category, timerMinutes });
+      setHabits((prev) => [res.data, ...prev]);
     } catch (err) {
-      console.error("Add habit error:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Could not add habit");
+      console.error("Add habit:", err.response?.data || err.message);
     }
   };
 
@@ -40,8 +47,7 @@ export default function Dashboard() {
       const res = await api.put(`/habits/${habit._id}/toggle`);
       setHabits((prev) => prev.map((h) => (h._id === habit._id ? res.data : h)));
     } catch (err) {
-      console.error("Toggle error:", err.response?.data || err.message);
-      alert("Could not toggle habit");
+      console.error("Toggle habit:", err.response?.data || err.message);
     }
   };
 
@@ -49,136 +55,111 @@ export default function Dashboard() {
     try {
       await api.delete(`/habits/${habitId}`);
       setHabits((prev) => prev.filter((h) => h._id !== habitId));
+      if (activeTimer?._id === habitId) setActiveTimer(null);
     } catch (err) {
-      console.error("Delete error:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Could not delete habit");
+      console.error("Delete habit:", err.response?.data || err.message);
     }
   };
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
-    const items = Array.from(habits);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    const items = [...habits];
+    const [moved] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, moved);
     setHabits(items);
   };
 
-  if (loading)
+  if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: "center", fontSize: 18 }}>
-        Loading habits...
+      <div className="spinner-container">
+        <div className="spinner" />
+        <span>Loading your habits…</span>
       </div>
     );
+  }
 
-  //  PLACE THE NAVBAR + DASHBOARD RETURN INSIDE THE FUNCTION
   return (
-    
-    <div style={{ fontFamily: "'Inter', sans-serif", background: "#bddf4fbb", minHeight: "100vh" }}>
-      
-
-      <div style={{ padding: "40px 20px", maxWidth: 800, margin: "0 auto" }}>
-        <h1
-            style={{
-              textAlign: "center",
-              fontSize: "32px",
-              fontWeight: 700,
-              marginBottom: "8px",
-              color: "#0d3b66",
-            }}
-          >
-          Hi, {user?.name || "User"} 👋
-      </h1>
-      <div
-  style={{
-    display: "flex",
-    gap: 12,
-    justifyContent: "center",
-    marginBottom: 20,
-    marginTop: 10,
-  }}
->
-  <a href="/progress" style={{ textDecoration: "none" }}>
-    <button
-      style={{
-        padding: "8px 14px",
-        borderRadius: 6,
-        border: "none",
-        background: "#0d6efd",
-        color: "white",
-      }}
-    >
-      View Progress
-    </button>
-  </a>
-
-
-
-  <a href="/about" style={{ textDecoration: "none" }}>
-    <button
-      style={{
-        padding: "8px 14px",
-        borderRadius: 6,
-        border: "none",
-        background: "#6c757d",
-        color: "white",
-      }}
-    >
-      About
-    </button>
-  </a>
-</div>
-        <h1 style={{ textAlign: "center", marginBottom: 30, color: "#84169fff" }}>
-          TRACK YOUR HABBIT HERE
-        </h1>
-
-        <div
-          style={{
-            background: "#1d9b9fff",
-            padding: 20,
-            borderRadius: 10,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-            marginBottom: 30,
-            border: "1px solid #e0e0e0",
-          }}
-        >
-          <HabitForm addHabit={addHabit} />
+    <div className="page-container">
+      {/* Header */}
+      <div className="dashboard-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ flex: 1, minWidth: "100%", textAlign: "center", marginBottom: 8 }}>
+          <h1 className="page-title">
+            Hey, {user?.name || "there"} 👋
+          </h1>
+          <p className="page-subtitle">
+            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          </p>
         </div>
+        <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            ✚ New Habit
+          </button>
+        </div>
+      </div>
 
+      {/* Stats */}
+      <StatsBar habits={habits} />
+
+      {/* Habit list */}
+      {habits.length === 0 ? (
+        <div className="glass-card empty-state">
+          <div className="empty-icon">🌱</div>
+          <p>Your journey of a thousand miles begins with a single habit! 🌈✨</p>
+          <button className="btn btn-primary" onClick={() => setShowForm(true)} style={{ marginTop: 12 }}>
+            Plant Your First Habit
+          </button>
+        </div>
+      ) : (
         <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="habits">
+          <Droppable droppableId="habit-list">
             {(provided) => (
-              <ul
-                style={{ listStyle: "none", padding: 0 }}
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-              >
+              <div {...provided.droppableProps} ref={provided.innerRef}>
                 {habits.map((habit, index) => (
                   <Draggable key={habit._id} draggableId={habit._id} index={index}>
                     {(provided, snapshot) => (
-                      <li
+                      <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
                         style={{
-                          userSelect: "none",
-                          marginBottom: 12,
-                          borderRadius: 8,
-                          background: snapshot.isDragging ? "#e3f2fd" : "#ffffff",
-                          transition: "all 0.2s ease",
+                          opacity: snapshot.isDragging ? 0.85 : 1,
                           ...provided.draggableProps.style,
                         }}
                       >
-                        <HabitCard habit={habit} toggleHabit={toggleHabit} deleteHabit={deleteHabit} />
-                      </li>
+                        <HabitCard
+                          habit={habit}
+                          toggleHabit={toggleHabit}
+                          deleteHabit={deleteHabit}
+                          onTimerClick={(h) => setActiveTimer(h)}
+                        />
+                      </div>
                     )}
                   </Draggable>
                 ))}
                 {provided.placeholder}
-              </ul>
+              </div>
             )}
           </Droppable>
         </DragDropContext>
-      </div>
+      )}
+
+      {/* Add Habit Modal */}
+      {showForm && (
+        <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && setShowForm(false)}>
+          <div className="glass-card modal-card">
+            <div className="modal-header">
+              <h2 className="modal-title">New Habit</h2>
+              <button className="close-btn" onClick={() => setShowForm(false)}>✕</button>
+            </div>
+            <HabitForm addHabit={addHabit} onClose={() => setShowForm(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Timer slide-up panel */}
+      {activeTimer && (
+        <Timer habit={activeTimer} onClose={() => setActiveTimer(null)} />
+      )}
     </div>
   );
 }

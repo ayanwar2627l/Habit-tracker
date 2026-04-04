@@ -1,127 +1,105 @@
-// src/components/HabitCard.js
-import React from "react";
+import React, { useState } from "react";
+import WeeklyTracker from "./WeeklyTracker";
 
-export default function HabitCard({ habit, toggleHabit, deleteHabit }) {
+const CATEGORY_BADGE = {
+  fitness:     "badge badge-fitness",
+  learning:    "badge badge-learning",
+  mindfulness: "badge badge-mindfulness",
+  health:      "badge badge-health",
+  general:     "badge badge-general",
+};
 
-  // Determine if habit is completed today
-  const todayEntry = habit.dates?.find(
-    (d) => new Date(d.date).toDateString() === new Date().toDateString()
-  );
-  const completedToday = !!todayEntry?.completed;
+function getCategoryClass(cat) {
+  return CATEGORY_BADGE[(cat || "general").toLowerCase()] || "badge badge-general";
+}
 
-  // Calculate Progress (% Completed)
-  // const totalDays = habit.dates?.length || 0;
-  // const completedDays = habit.dates?.filter((d) => d.completed).length || 0;
-  // const progress = totalDays === 0 ? 0 : Math.round((completedDays / totalDays) * 100);
+function isTodayDone(dates) {
+  const todayStr = new Date().toDateString();
+  return dates?.some((d) => new Date(d.date).toDateString() === todayStr && d.completed);
+}
 
-  // Calculate Streak 
-  // function calculateStreak() {
-  //   if (!habit.dates || habit.dates.length === 0) return 0;
+export default function HabitCard({ habit, toggleHabit, deleteHabit, onTimerClick }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const todayDone = isTodayDone(habit.dates);
 
-  //   const sorted = [...habit.dates].sort((a, b) => new Date(b.date) - new Date(a.date));
-  //   let streak = 0;
-  //   let previous = new Date();
-
-  //   for (let i of sorted) {
-  //     const entryDate = new Date(i.date);
-  //     const difference = (previous - entryDate) / (1000 * 60 * 60 * 24);
-
-  //     if (i.completed && difference <= 1.3) {
-  //       streak++;
-  //       previous = entryDate;
-  //     } else break;
-  //   }
-
-  //   return streak;
-  // }
-
-  // const streak = calculateStreak();
+  const handleDelete = () => {
+    if (confirmDelete) {
+      deleteHabit(habit._id);
+    } else {
+      setConfirmDelete(true);
+      // Auto-reset the confirm state after 3 seconds
+      setTimeout(() => setConfirmDelete(false), 3000);
+    }
+  };
 
   return (
-    <li
-      style={{
-        display: "flex",
-        alignItems: "center",
-        width: "100%",
-        padding: "14px 16px",
-        borderRadius: 10,
-        marginBottom: 12,
-        background: "#ffffff",
-        border: "1px solid #ddd",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-      }}
-    >
+    <div className="glass-card habit-card" style={{ textAlign: "center" }}>
+      {/* Top row: checkbox, title, category badge */}
+      <div className="habit-card-header" style={{ justifyContent: "center" }}>
+        <button
+          className={`habit-checkbox ${todayDone ? "checked" : ""}`}
+          onClick={() => toggleHabit(habit)}
+          aria-label={todayDone ? "Mark habit as not completed for today" : "Mark habit as completed for today"}
+          aria-checked={todayDone}
+          role="checkbox"
+        />
 
-      {/* Habit Title + Streak */}
-      <div style={{ flex: 1, textAlign: "left" }}>
-        <span
-          style={{
-            textDecoration: completedToday ? "line-through" : "none",
-            fontSize: 18,
-            fontWeight: 600,
-            color: "#111",
-          }}
-        >
-          {habit.title}
+        <div style={{ flex: "0 1 auto", minWidth: 0 }}>
+          <div
+            className="habit-title"
+            style={{ 
+              textDecoration: todayDone ? "line-through" : "none", 
+              color: todayDone ? "var(--text-muted)" : "var(--text-primary)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
+            }}
+          >
+            {habit.title}
+          </div>
+        </div>
+
+        <span className={getCategoryClass(habit.category)} aria-label={`Category: ${habit.category || "General"}`}>
+          {habit.category || "General"}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="progress-bar-wrap" style={{ marginTop: 12 }} aria-hidden="true">
+        <div className="progress-bar-fill" style={{ width: `${habit.progress || 0}%` }} />
+      </div>
+      <span className="sr-only">Overall progress: {habit.progress || 0}%</span>
+
+      {/* 7-day tracker */}
+      <WeeklyTracker dates={habit.dates} />
+
+      {/* Action row */}
+      <div className="habit-actions">
+        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", flex: 1 }}>
+          {habit.progress || 0}% overall
         </span>
 
-        {/* <div style={{ fontSize: 13, color: "#666", marginTop: 6 }}>
-           Streak: {streak} days
-        </div> */}
-
-        {/* Progress Bar */}
-        {/* <div style={{ marginTop: 8 }}> */}
-          {/* <div style={{ background: "#eee", width: "100%", height: 8, borderRadius: 5 }}> */}
-            {/* <div
-              style={{
-                width: `${progress}%`,
-                height: "100%",
-                borderRadius: 5,
-                background: "#3b82f6",
-                transition: "0.4s",
-              }}
-            ></div> */}
-          {/* </div> */}
-          {/* <span style={{ fontSize: 12, color: "#333" }}>{progress}% completed</span> */}
-        {/* </div> */}
-      </div>
-
-      {/* Buttons */}
-      <div style={{ display: "flex", gap: 10, marginLeft: "auto" }}>
-        <button
-          onClick={() => toggleHabit(habit)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: 6,
-            border: "none",
-            backgroundColor: completedToday ? "#f59e0b" : "#10b981",
-            color: "white",
-            cursor: "pointer",
-            fontWeight: 500,
-          }}
-        >
-          {completedToday ? "Undo" : "Complete"}
-        </button>
+        {habit.timerMinutes > 0 && (
+          <button
+            className="btn btn-ghost"
+            style={{ padding: "5px 12px", fontSize: "0.8rem" }}
+            onClick={() => onTimerClick(habit)}
+            aria-label={`Start ${habit.timerMinutes} minute focus timer for ${habit.title}`}
+          >
+            <span aria-hidden="true">⏱</span> {habit.timerMinutes}m
+          </button>
+        )}
 
         <button
-          onClick={() => {
-            if (window.confirm(`Delete habit "${habit.title}"?`))
-              deleteHabit(habit._id);
-          }}
-          style={{
-            padding: "8px 12px",
-            borderRadius: 6,
-            border: "none",
-            backgroundColor: "#ef4444",
-            color: "white",
-            cursor: "pointer",
-            fontWeight: 500,
-          }}
+          className={`btn ${confirmDelete ? "btn-danger" : "btn-ghost"}`}
+          style={{ padding: "5px 12px", fontSize: "0.8rem" }}
+          onClick={handleDelete}
+          aria-label={confirmDelete ? "Confirm deletion of habit" : "Delete habit"}
         >
-          Delete
+          <span aria-hidden="true">{confirmDelete ? "Confirm?" : "🗑"}</span>
+          {!confirmDelete && <span className="sr-only">Delete Habit</span>}
         </button>
       </div>
-    </li>
+    </div>
   );
-  
 }

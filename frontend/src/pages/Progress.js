@@ -1,148 +1,137 @@
-// src/pages/Progress.js
 import React, { useEffect, useState } from "react";
+import {
+  AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from "recharts";
 import api from "../api";
+
+// Custom dark tooltip for recharts
+function DarkTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: "var(--bg-card)",
+      border: "1px solid var(--border)",
+      borderRadius: 8,
+      padding: "10px 14px",
+      fontSize: "0.82rem",
+    }}>
+      <p style={{ color: "var(--text-secondary)", marginBottom: 4 }}>{label}</p>
+      {payload.map((p) => (
+        <p key={p.dataKey} style={{ color: p.color, fontWeight: 600 }}>
+          {p.name}: {p.value}%
+        </p>
+      ))}
+    </div>
+  );
+}
 
 export default function Progress() {
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [maxStreak, setMaxStreak] = useState(0);
 
   useEffect(() => {
-    const fetchHabits = async () => {
-      try {
-        const res = await api.get("/habits");
-        setHabits(res.data);
-
-        // ✅ Corrected Streak Calculation
-        let max = 0;
-        res.data.forEach((habit) => {
-          let streak = 0;
-          let tempMax = 0;
-
-          const sortedEntries = habit.dates.sort(
-            (a, b) => new Date(a.date) - new Date(b.date)
-          );
-
-          for (let i = 0; i < sortedEntries.length; i++) {
-            if (sortedEntries[i].completed) streak++;
-            else streak = 0;
-            if (streak > tempMax) tempMax = streak;
-          }
-
-          if (tempMax > max) max = tempMax;
-        });
-
-        setMaxStreak(max);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHabits();
+    api.get("/habits")
+      .then((res) => setHabits(res.data))
+      .catch((err) => {
+        if (err.response?.status === 401) window.location.href = "/login";
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ padding: 20 }}>Loading progress...</div>;
+  if (loading) {
+    return (
+      <div className="spinner-container">
+        <div className="spinner" />
+        <span>Loading progress…</span>
+      </div>
+    );
+  }
+
+  // Build per-habit bar chart data
+  const barData = habits.map((h) => ({
+    name: h.title.length > 16 ? h.title.slice(0, 16) + "…" : h.title,
+    "Completion %": h.progress || 0,
+  }));
+
+  // Build a 7-day area chart showing how many habits were done per day
+  const today = new Date();
+  const areaData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i));
+    const dStr = d.toDateString();
+    const label = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+    const done = habits.filter((h) =>
+      h.dates?.some((entry) => new Date(entry.date).toDateString() === dStr && entry.completed)
+    ).length;
+
+    const rate = habits.length === 0 ? 0 : Math.round((done / habits.length) * 100);
+
+    return { day: label, "Done %": rate, habits: done };
+  });
 
   return (
-    <div style={{ padding: 40, fontFamily: "'Inter', sans-serif" }}>
+    <div className="page-container">
+      <h1 className="page-title">Your Progress</h1>
+      <p className="page-subtitle">Visualising your habit journey over the past week</p>
 
-      {/* buttons for nav */}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          justifyContent: "center",
-          marginBottom: 20,
-          marginTop: 10,
-        }}
-      >
-        <a href="/about" style={{ textDecoration: "none" }}>
-          <button
-            style={{
-              padding: "8px 14px",
-              borderRadius: 6,
-              border: "none",
-              background: "#047043ff",
-              color: "white",
-            }}
-          >
-            About
-          </button>
-        </a>
-
-        <a href="/dashboard" style={{ textDecoration: "none" }}>
-          <button
-            style={{
-              padding: "8px 14px",
-              borderRadius: 6,
-              border: "none",
-              background: "#2fa8a2ff",
-              color: "white",
-            }}
-          >
-            Dashboard
-          </button>
-        </a>
-      </div>
-
-      <h2 style={{ textAlign: "center", marginBottom: 20, color: "#1976d2" }}>
-        Your Progress
-      </h2>
-
-      <h3 style={{ textAlign: "center", marginBottom: 20 }}>
-        Max Streak Achieved: <strong>{maxStreak}</strong> days 🔥
-      </h3>
-
-      {habits.map((habit) => {
-        const completedCount = habit.dates.filter((d) => d.completed).length;
-        const totalCount = habit.dates.length || 1;
-
-        //calculating progress
-        const progress = Math.round((completedCount / totalCount) * 100);
-
-        return (
-          <div
-            key={habit._id}
-            style={{
-              marginBottom: 20,
-              padding: 20,
-              borderRadius: 10,
-              background: "#e0f7fa",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h4 style={{ marginBottom: 10, fontWeight: "bold" }}>
-              {habit.title}
-            </h4>
-
-            {/* ✅ Added Days Completed */}
-            <p style={{ marginBottom: 8 }}>
-              Days Completed: <strong>{completedCount}</strong>
-            </p>
-
-            <div
-              style={{
-                height: 20,
-                width: "100%",
-                background: "#ccc",
-                borderRadius: 10,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: `${progress}%`,
-                  background: "#1976d2",
-                  height: "100%",
-                }}
-              ></div>
-            </div>
-            <p style={{ marginTop: 5 }}>{progress}% completed</p>
+      {habits.length === 0 ? (
+        <div className="glass-card empty-state">
+          <div className="empty-icon">📈</div>
+          <p>Every small step counts! Start your habit journey to see your progress bloom. 🌸✨</p>
+        </div>
+      ) : (
+        <>
+          {/* Area chart — daily completion rate */}
+          <div className="glass-card" style={{ padding: "24px 20px", marginBottom: 24 }}>
+            <h2 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 20, color: "var(--text-secondary)" }}>
+              📅 Daily Completion Rate (Last 7 Days)
+            </h2>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={areaData}>
+                <defs>
+                  <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+                <Tooltip content={<DarkTooltip />} />
+                <Area type="monotone" dataKey="Done %" stroke="#7c3aed" strokeWidth={2.5} fill="url(#areaGrad)" dot={{ fill: "#7c3aed", r: 4 }} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-        );
-      })}
+
+          {/* Bar chart — per habit overall progress */}
+          <div className="glass-card" style={{ padding: "24px 20px" }}>
+            <h2 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 20, color: "var(--text-secondary)" }}>
+              🏷 Per-Habit Overall Completion
+            </h2>
+            {/* Standalone SVG defs so #barGrad is available to recharts */}
+            <svg width="0" height="0" style={{ position: "absolute" }}>
+              <defs>
+                <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={barData} barSize={32}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+                <Tooltip content={<DarkTooltip />} />
+                <Legend wrapperStyle={{ color: "var(--text-secondary)", fontSize: 12 }} />
+                <Bar dataKey="Completion %" fill="url(#barGrad)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
     </div>
   );
 }
