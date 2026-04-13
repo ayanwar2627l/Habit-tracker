@@ -16,7 +16,7 @@ connectDB();
 const app = express();
 
 // Allow requests from the React dev server and any deployed frontend
-app.use(cors({ origin: "habit-tracker-eight-sandy.vercel.app", credentials: true }));
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 
 app.get("/", (req, res) => res.send("Habit Tracker API is running "));
