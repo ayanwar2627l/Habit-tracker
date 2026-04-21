@@ -14,9 +14,11 @@ dotenv.config();
 connectDB();
 
 const app = express();
-
 // Allow requests from the React dev server and any deployed frontend
-app.use(cors({ origin: "*", credentials: true }));
+const allowedOrigins = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL, "http://localhost:3000"]
+  : ["http://localhost:3000"];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
 app.get("/", (req, res) => res.send("Habit Tracker API is running "));
